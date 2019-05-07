@@ -22,7 +22,8 @@
     "squizlabs/php_codesniffer": "^3.4",
     "phpcompatibility/php-compatibility": "^9.1",
     "wp-coding-standards/wpcs": "^2.0",
-    "phpcompatibility/phpcompatibility-wp": "^2.0"
+    "phpcompatibility/phpcompatibility-wp": "^2.0",
+    "mf2/mf2": "^0.4.6"
   },
   "scripts": {
     "test": [
@@ -30,9 +31,17 @@
       "bin/install-wp-tests.sh wordpress wordpress wordpress",
       "vendor/bin/phpunit"
     ],
+    "copy-files": [
+      "cp -u -r vendor/mf2/mf2/Mf2/Parser.php includes"
+      ],
+
     "lint": "phpcs",
     "install-codestandards": [
 	"Dealerdirect\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
+    ],
+    "post-update-cmd": [
+	"@copy-files"
     ]
+
   }
 }

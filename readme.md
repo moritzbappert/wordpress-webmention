@@ -7,7 +7,7 @@
 **Requires at least:** 4.7  
 **Tested up to:** 4.9.9  
 **Stable tag:** 3.8.8  
-**Requires PHP:** 5.2  
+**Requires PHP:** 5.4  
 **License:** MIT  
 **License URI:** http://opensource.org/licenses/MIT  
 
