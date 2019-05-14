@@ -10,4 +10,7 @@ function webmention_allow_localhost( $r, $url ) {
 
 	return $r;
 }
-add_filter( 'http_request_args', 'webmention_allow_localhost', 10, 2 );
+
+if ( WP_DEBUG ) {
+	add_filter( 'http_request_args', 'webmention_allow_localhost', 10, 2 );
+}

@@ -32,7 +32,9 @@
       "vendor/bin/phpunit"
     ],
     "copy-files": [
-      "cp -u -r vendor/mf2/mf2/Mf2/Parser.php includes"
+      "cp -u -r vendor/mf2/mf2/Mf2/Parser.php includes/lib/Mf2",
+      "cp -u -r vendor/mf2/mf2/README.md includes/lib/Mf2",
+      "cp -u -r vendor/mf2/mf2/LICENSE.md includes/lib/Mf2"
       ],
 
     "lint": "phpcs",

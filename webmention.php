@@ -36,29 +36,13 @@ function webmention_init() {
 	if ( 1 === (int) get_option( 'webmention_support_pages' ) ) {
 		add_post_type_support( 'page', 'webmentions' );
 	}
-	if ( WP_DEBUG ) {
-		require_once dirname( __FILE__ ) . '/includes/debug.php';
-	}
 
 	// list of various public helper functions
 	require_once dirname( __FILE__ ) . '/includes/functions.php';
 
-	// load HTTP 410 support
-	require_once dirname( __FILE__ ) . '/includes/class-webmention-410.php';
-	add_action( 'init', array( 'Webmention_410', 'init' ) );
-
-	// initialize Webmention Sender
-	require_once dirname( __FILE__ ) . '/includes/class-webmention-sender.php';
-	add_action( 'init', array( 'Webmention_Sender', 'init' ) );
-
-	// initialize Webmention Receiver
-	require_once dirname( __FILE__ ) . '/includes/class-webmention-receiver.php';
-	add_action( 'init', array( 'Webmention_Receiver', 'init' ) );
-
-	// initialize Webmention Vouch
-	if ( WEBMENTION_VOUCH ) {
-		require_once dirname( __FILE__ ) . '/includes/class-webmention-vouch.php';
-		add_action( 'init', array( 'Webmention_Vouch', 'init' ) );
+	$path = plugin_dir_path( __FILE__ ) . 'includes/';
+	foreach ( glob( $path . '*.php' ) as $filename ) {
+		require_once $filename;
 	}
 
 	// Default Comment Status

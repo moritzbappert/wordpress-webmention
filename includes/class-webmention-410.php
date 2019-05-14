@@ -51,3 +51,5 @@ class Webmention_410 {
 		}
 	}
 }
+
+add_action( 'init', array( 'Webmention_410', 'init' ) );

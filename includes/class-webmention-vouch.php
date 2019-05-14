@@ -146,3 +146,7 @@ class Webmention_Vouch {
 		);
 	}
 }
+
+if ( WEBMENTION_VOUCH ) {
+	add_action( 'init', array( 'Webmention_Vouch', 'init' ) );
+}

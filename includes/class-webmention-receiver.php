@@ -869,3 +869,5 @@ class Webmention_Receiver {
 		return $array;
 	}
 }
+
+add_action( 'init', array( 'Webmention_Receiver', 'init' ) );

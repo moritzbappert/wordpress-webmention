@@ -251,3 +251,6 @@ class Webmention_Sender {
 		}
 	}
 }
+
+
+add_action( 'init', array( 'Webmention_Sender', 'init' ) );
