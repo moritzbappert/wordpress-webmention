@@ -57,7 +57,9 @@ function webmention_init() {
 			if ( strncmp( $filename, 'class', strlen( 'class' ) ) === 0 ) {
 				$filename = str_replace( 'class-', '', $filename );
 				$filename = ucwords( str_replace( '-', '_', $filename ), '_' );
-				add_action( 'init', array( $filename, 'init' ) );
+				if ( method_exists( $filename, 'init' ) ) {
+					add_action( 'init', array( $filename, 'init' ) );
+				}
 			}
 		}
 	}
