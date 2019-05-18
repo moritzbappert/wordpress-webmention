@@ -9,40 +9,41 @@ class Webmention_Receiver {
 	 * Initialize the plugin, registering WordPress hooks
 	 */
 	public static function init() {
-		add_filter( 'query_vars', array( 'Webmention_Receiver', 'query_var' ) );
+		$cls = get_called_class();
+		add_filter( 'query_vars', array( $cls, 'query_var' ) );
 
 		// Configure the REST API route
-		add_action( 'rest_api_init', array( 'Webmention_Receiver', 'register_routes' ) );
+		add_action( 'rest_api_init', array( $cls, 'register_routes' ) );
 		// Filter the response to allow a webmention form if no parameters are passed
-		add_filter( 'rest_pre_serve_request', array( 'Webmention_Receiver', 'serve_request' ), 11, 4 );
+		add_filter( 'rest_pre_serve_request', array( $cls, 'serve_request' ), 11, 4 );
 
-		add_filter( 'duplicate_comment_id', array( 'Webmention_Receiver', 'disable_wp_check_dupes' ), 20, 2 );
+		add_filter( 'duplicate_comment_id', array( $cls, 'disable_wp_check_dupes' ), 20, 2 );
 
 		// endpoint discovery
-		add_action( 'wp_head', array( 'Webmention_Receiver', 'html_header' ), 99 );
-		add_action( 'send_headers', array( 'Webmention_Receiver', 'http_header' ) );
-		add_filter( 'host_meta', array( 'Webmention_Receiver', 'jrd_links' ) );
-		add_filter( 'webfinger_user_data', array( 'Webmention_Receiver', 'jrd_links' ) );
-		add_filter( 'webfinger_post_data', array( 'Webmention_Receiver', 'jrd_links' ) );
+		add_action( 'wp_head', array( $cls, 'html_header' ), 99 );
+		add_action( 'send_headers', array( $cls, 'http_header' ) );
+		add_filter( 'host_meta', array( $cls, 'jrd_links' ) );
+		add_filter( 'webfinger_user_data', array( $cls, 'jrd_links' ) );
+		add_filter( 'webfinger_post_data', array( $cls, 'jrd_links' ) );
 
 		// Webmention helper
-		add_filter( 'webmention_comment_data', array( 'Webmention_Receiver', 'webmention_verify' ), 11, 1 );
-		add_filter( 'webmention_comment_data', array( 'Webmention_Receiver', 'check_dupes' ), 12, 1 );
+		add_filter( 'webmention_comment_data', array( $cls, 'webmention_verify' ), 11, 1 );
+		add_filter( 'webmention_comment_data', array( $cls, 'check_dupes' ), 12, 1 );
 
 		// Webmention data handler
-		add_filter( 'webmention_comment_data', array( 'Webmention_Receiver', 'default_title_filter' ), 21, 1 );
-		add_filter( 'webmention_comment_data', array( 'Webmention_Receiver', 'default_content_filter' ), 22, 1 );
+		add_filter( 'webmention_comment_data', array( $cls, 'default_title_filter' ), 21, 1 );
+		add_filter( 'webmention_comment_data', array( $cls, 'default_content_filter' ), 22, 1 );
 
 		// Allow for avatars on webmention comment types
 		if ( 0 !== (int) get_option( 'webmention_avatars', 1 ) ) {
-			add_filter( 'get_avatar_comment_types', array( 'Webmention_Receiver', 'get_avatar_comment_types' ), 99 );
+			add_filter( 'get_avatar_comment_types', array( $cls, 'get_avatar_comment_types' ), 99 );
 		}
 
 		// Threaded comments support
-		add_filter( 'template_include', array( 'Webmention_Receiver', 'comment_template_include' ) );
+		add_filter( 'template_include', array( $cls, 'comment_template_include' ) );
 
 		// Support Webmention delete
-		add_action( 'webmention_data_error', array( 'Webmention_Receiver', 'delete' ) );
+		add_action( 'webmention_data_error', array( $cls, 'delete' ) );
 
 		self::register_meta();
 	}
@@ -138,11 +139,11 @@ class Webmention_Receiver {
 			array(
 				array(
 					'methods'  => WP_REST_Server::CREATABLE,
-					'callback' => array( 'Webmention_Receiver', 'post' ),
+					'callback' => array( $cls, 'post' ),
 				),
 				array(
 					'methods'  => WP_REST_Server::READABLE,
-					'callback' => array( 'Webmention_Receiver', 'get' ),
+					'callback' => array( $cls, 'get' ),
 				),
 			)
 		);
@@ -869,5 +870,3 @@ class Webmention_Receiver {
 		return $array;
 	}
 }
-
-add_action( 'init', array( 'Webmention_Receiver', 'init' ) );

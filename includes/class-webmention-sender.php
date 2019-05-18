@@ -9,24 +9,25 @@ class Webmention_Sender {
 	 * Initialize the plugin, registering WordPress hooks
 	 */
 	public static function init() {
+		$cls = get_called_class();
 		// a pseudo hook so you can run a do_action('send_webmention')
 		// instead of calling Webmention_Sender::send_webmention
-		add_action( 'send_webmention', array( 'Webmention_Sender', 'send_webmention' ), 10, 2 );
+		add_action( 'send_webmention', array( $cls, 'send_webmention' ), 10, 2 );
 
 		// run webmentions before the other pinging stuff
-		add_action( 'do_pings', array( 'Webmention_Sender', 'do_webmentions' ), 5, 1 );
+		add_action( 'do_pings', array( $cls, 'do_webmentions' ), 5, 1 );
 
 		// Send Webmentions from Every Type that Declared Webmention Support
 		$post_types = get_post_types_by_support( 'webmentions' );
 		foreach ( $post_types as $post_type ) {
-			add_action( 'publish_' . $post_type, array( 'Webmention_Sender', 'publish_hook' ) );
+			add_action( 'publish_' . $post_type, array( $cls, 'publish_hook' ) );
 		}
 
-		add_action( 'comment_post', array( 'Webmention_Sender', 'comment_post' ) );
+		add_action( 'comment_post', array( $cls, 'comment_post' ) );
 
 		// remote delete posts
-		add_action( 'trashed_post', array( 'Webmention_Sender', 'trash_hook' ) );
-		add_action( 'webmention_delete', array( 'Webmention_Sender', 'send_webmentions' ) );
+		add_action( 'trashed_post', array( $cls, 'trash_hook' ) );
+		add_action( 'webmention_delete', array( $cls, 'send_webmentions' ) );
 	}
 
 	/**
@@ -137,7 +138,7 @@ class Webmention_Sender {
 	 * You can still hook this function directly into the `publish_post` action:
 	 *
 	 * <code>
-	 *   add_action('publish_post', array('Webmention_Sender', 'send_webmentions'));
+	 *   add_action('publish_post', array($cls, 'send_webmentions'));
 	 * </code>
 	 *
 	 * @param int $post_id the post_ID
@@ -251,6 +252,3 @@ class Webmention_Sender {
 		}
 	}
 }
-
-
-add_action( 'init', array( 'Webmention_Sender', 'init' ) );

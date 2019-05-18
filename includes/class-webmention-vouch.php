@@ -10,9 +10,11 @@ class Webmention_Vouch {
 	 */
 	public static function init() {
 		// Webmention helper
-		add_filter( 'webmention_comment_data', array( 'Webmention_Vouch', 'verify_vouch' ), 10, 1 );
-
-		self::register_meta();
+		$cls = get_called_class();
+		if ( WEBMENTION_VOUCH ) {
+			add_filter( 'webmention_comment_data', array( $cls, 'verify_vouch' ), 10, 1 );
+			self::register_meta();
+		}
 	}
 
 	/**
@@ -145,8 +147,4 @@ class Webmention_Vouch {
 			)
 		);
 	}
-}
-
-if ( WEBMENTION_VOUCH ) {
-	add_action( 'init', array( 'Webmention_Vouch', 'init' ) );
 }

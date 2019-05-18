@@ -9,7 +9,8 @@ class Webmention_410 {
 	 * Initialize Deleted Posts Plugin
 	 */
 	public static function init() {
-		add_action( 'template_redirect', array( 'Webmention_410', 'handle_410' ), 99 );
+		$cls = get_called_class();
+		add_action( 'template_redirect', array( $cls, 'handle_410' ), 99 );
 	}
 
 	public static function handle_410() {
@@ -52,4 +53,3 @@ class Webmention_410 {
 	}
 }
 
-add_action( 'init', array( 'Webmention_410', 'init' ) );

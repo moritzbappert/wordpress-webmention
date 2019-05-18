@@ -40,9 +40,26 @@ function webmention_init() {
 	// list of various public helper functions
 	require_once dirname( __FILE__ ) . '/includes/functions.php';
 
+	$files = array(
+		'functions.php',
+		'class-webmention-receiver.php',
+		'class-webmention-sender.php',
+		'class-webmention-vouch.php',
+		'class-webmention-admin.php',
+		'class-webmention-410.php',
+	);
+
 	$path = plugin_dir_path( __FILE__ ) . 'includes/';
-	foreach ( glob( $path . '*.php' ) as $filename ) {
-		require_once $filename;
+	foreach ( $files as $filename ) {
+		if ( file_exists( $path . $filename ) ) {
+			require_once $path . $filename;
+			$filename = str_replace( '.php', '', $filename );
+			if ( strncmp( $filename, 'class', strlen( 'class' ) ) === 0 ) {
+				$filename = str_replace( 'class-', '', $filename );
+				$filename = ucwords( str_replace( '-', '_', $filename ), '_' );
+				add_action( 'init', array( $filename, 'init' ) );
+			}
+		}
 	}
 
 	// Default Comment Status
