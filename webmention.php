@@ -41,6 +41,7 @@ function webmention_init() {
 	require_once dirname( __FILE__ ) . '/includes/functions.php';
 
 	$files = array(
+		'debug.php',
 		'functions.php',
 		'class-webmention-receiver.php',
 		'class-webmention-sender.php',
