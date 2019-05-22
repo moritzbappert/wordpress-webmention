@@ -133,6 +133,7 @@ class Webmention_Receiver {
 	 * Register the Route.
 	 */
 	public static function register_routes() {
+		$cls = get_called_class();
 		register_rest_route(
 			'webmention/1.0',
 			'/endpoint',
