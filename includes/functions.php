@@ -269,3 +269,106 @@ if ( ! function_exists( 'is_avatar_comment_type' ) ) :
 			return in_array( $comment_type, (array) $allowed_comment_types, true );
 	}
 endif;
+
+
+/* Inverse of wp_parse_url
+ *
+ * Slightly modified from p3k-utils (https://github.com/aaronpk/p3k-utils)
+ * Copyright 2017 Aaron Parecki, used with permission under MIT License
+ *
+ * @link http://php.net/parse_url
+ * @param  string $parsed_url the parsed URL (wp_parse_url)
+ * @return string             the final URL
+ */
+if ( ! function_exists( 'build_url' ) ) {
+	function build_url( $parsed_url ) {
+			$scheme   = ! empty( $parsed_url['scheme'] ) ? $parsed_url['scheme'] . '://' : '';
+			$host     = ! empty( $parsed_url['host'] ) ? $parsed_url['host'] : '';
+			$port     = ! empty( $parsed_url['port'] ) ? ':' . $parsed_url['port'] : '';
+			$user     = ! empty( $parsed_url['user'] ) ? $parsed_url['user'] : '';
+			$pass     = ! empty( $parsed_url['pass'] ) ? ':' . $parsed_url['pass'] : '';
+			$pass     = ( $user || $pass ) ? "$pass@" : '';
+			$path     = ! empty( $parsed_url['path'] ) ? $parsed_url['path'] : '';
+			$query    = ! empty( $parsed_url['query'] ) ? '?' . $parsed_url['query'] : '';
+			$fragment = ! empty( $parsed_url['fragment'] ) ? '#' . $parsed_url['fragment'] : '';
+
+			return "$scheme$user$pass$host$port$path$query$fragment";
+	}
+}
+
+
+if ( ! function_exists( 'normalize_url' ) ) {
+	// Adds slash if no path is in the URL, and convert hostname to lowercase
+	function normalize_url( $url ) {
+			$parts = wp_parse_url( $url );
+		if ( empty( $parts['path'] ) ) {
+				$parts['path'] = '/';
+		}
+		if ( isset( $parts['host'] ) ) {
+				$parts['host'] = strtolower( $parts['host'] );
+				return build_url( $parts );
+		}
+	}
+}
+
+if ( ! function_exists( 'new_linkback' ) ) {
+	function new_linkback( $commentdata ) {
+		// Does not work on conventional comments
+		if ( ! isset( $commentdata['comment_type'] ) || in_array( $commentdata['comment_type'], array( '', 'comment' ), true ) ) {
+			return new WP_Error(
+				'invalid_linkback_type',
+				__( 'Not a Valid Linkback Type', 'webmention' )
+			);
+		}
+
+		// disable flood control
+		remove_filter( 'wp_is_comment_flood', 'wp_check_comment_flood', 10 );
+
+		$return = wp_new_comment( $commentdata, true );
+
+		// re-add flood control
+		add_filter( 'wp_is_comment_flood', 'wp_check_comment_flood', 10, 5 );
+
+		if ( is_wp_error( $return ) ) {
+			return $return;
+		}
+		/**
+		 * Fires when a webmention is created.
+		 *
+		 * Mirrors comment_post and pingback_post.
+		 *
+		 * @param int $comment_ID Comment ID.
+		 * @param array $commentdata Comment Array.
+		 */
+		do_action( '{$comment->comment_type}_post', $commentdata['comment_ID'], $commentdata );
+		return $return;
+	}
+}
+
+if ( ! function_exists( 'update_linkback' ) ) {
+	function update_linkback( $commentarr ) {
+		$comment_type = isset( $commentarr['comment_type'] ) ? $commentarr['comment_type'] : get_comment_type( $commentarr['comment_ID'] );
+
+		// disable flood control
+		remove_filter( 'wp_is_comment_flood', 'wp_check_comment_flood', 10 );
+
+		$return = wp_update_comment( $commentarr );
+
+		// re-add flood control
+		add_filter( 'wp_is_comment_flood', 'wp_check_comment_flood', 10, 5 );
+
+		if ( 1 === $return && ! in_array( $comment_type, array( '', 'comment' ), true ) ) {
+			/**
+			 * Fires after a webmention is updated in the database.
+			 *
+			 * The hook is needed as the comment_post hook uses filtered data
+			 *
+			 * @param int   $comment_ID The comment ID.
+			 * @param array $commmentdata       Comment data.
+			 */
+			do_action( 'edit_{$comment_type}', $commentdata['comment_ID'], $commentdata );
+		}
+		return $return;
+	}
+}
+

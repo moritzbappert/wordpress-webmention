@@ -354,13 +354,10 @@ class Webmention_Receiver {
 			return $commentdata;
 		}
 
-		// disable flood control
-		remove_action( 'check_comment_flood', 'check_comment_flood_db', 10 );
-
 		// update or save webmention
 		if ( empty( $commentdata['comment_ID'] ) ) {
 			// save comment
-			$commentdata['comment_ID'] = wp_new_comment( $commentdata, true );
+			$commentdata['comment_ID'] = new_linkback( $commentdata );
 
 			/**
 			 * Fires when a webmention is created.
@@ -373,24 +370,12 @@ class Webmention_Receiver {
 			do_action( 'webmention_post', $commentdata['comment_ID'], $commentdata );
 		} else {
 			// update comment
-			wp_update_comment( $commentdata );
-			/**
-			 * Fires after a webmention is updated in the database.
-			 *
-			 * The hook is needed as the comment_post hook uses filtered data
-			 *
-			 * @param int   $comment_ID The comment ID.
-			 * @param array $data       Comment data.
-			 */
-			do_action( 'edit_webmention', $commentdata['comment_ID'], $commentdata );
+			update_linkback( $commentdata );
 		}
 
 		if ( is_wp_error( $commentdata['comment_ID'] ) ) {
 			return $commentdata['comment_ID'];
 		}
-
-		// re-add flood control
-		add_action( 'check_comment_flood', 'check_comment_flood_db', 10, 4 );
 
 		// Return select data
 		$return = array(
