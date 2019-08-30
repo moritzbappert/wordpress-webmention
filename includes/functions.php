@@ -311,8 +311,50 @@ if ( ! function_exists( 'normalize_url' ) ) {
 	}
 }
 
+/* Takes parameters passed in commentdata and converts them for storage in comment meta
+*/
+if ( ! function_exists( 'linkback_commentdata' ) ) {
+	function linkback_commentdata( $commentdata ) {
+		if ( ! array_key_exists( 'comment_meta', $commentdata ) ) {
+			$commentdata['comment_meta'] = array();
+		}
+		// Store the protocol
+		if ( array_key_exists( 'protocol', $commentdata ) ) {
+			$commentdata['comment_meta']['protocol'] = $commentdata['protocol'];
+		}
+
+		// Store the time of creation
+		if ( array_key_exists( 'created', $commentdata ) ) {
+			$commentdata['comment_meta']['created'] = $commentdata['created'];
+		}
+
+		// Safely store the vouch in comment meta
+		if ( array_key_exists( 'vouch', $commentdata ) ) {
+			$commentdata['comment_meta']['webmention_vouch_url'] = esc_url_raw( $commentdata['vouch'] );
+		}
+		// Save Source to Meta to Allow Author URL to be Changed and Parsed
+		if ( array_key_exists( 'source', $commentdata ) ) {
+			$commentdata['comment_meta']['webmention_source_url'] = esc_url_raw( $commentdata['source'] );
+		}
+		if ( array_key_exists( 'target', $commentdata ) ) {
+			$commentdata['comment_meta']['webmention_target_url'] = $commentdata['target'];
+			$fragment = wp_parse_url( $commentdata['target'], PHP_URL_FRAGMENT );
+			if ( ! empty( $fragment ) ) {
+				$commentdata['comment_meta']['webmention_target_fragment'] = $fragment;
+			}
+		}
+		return $commentdata;
+	}
+}
+
 if ( ! function_exists( 'new_linkback' ) ) {
 	function new_linkback( $commentdata ) {
+		if ( ! is_array( $commentdata ) ) {
+			return new WP_Error(
+				'invalid_input',
+				__( 'No Data Passed to Create New Linkback', 'webmention' )
+			);
+		}
 		// Does not work on conventional comments
 		if ( ! isset( $commentdata['comment_type'] ) || in_array( $commentdata['comment_type'], array( '', 'comment' ), true ) ) {
 			return new WP_Error(
@@ -320,6 +362,12 @@ if ( ! function_exists( 'new_linkback' ) ) {
 				__( 'Not a Valid Linkback Type', 'webmention' )
 			);
 		}
+
+		// Sanity Check
+		if ( ! empty( $commentdata['comment_ID'] ) ) {
+			return new WP_Error( 'comment_exists', __( 'Cannot create existing comment.', 'webmention' ) );
+		}
+		$commentdata = linkback_commentdata( $commentdata );
 
 		// disable flood control
 		remove_filter( 'wp_is_comment_flood', 'wp_check_comment_flood', 10 );
@@ -347,7 +395,15 @@ if ( ! function_exists( 'new_linkback' ) ) {
 
 if ( ! function_exists( 'update_linkback' ) ) {
 	function update_linkback( $commentarr ) {
+		if ( ! is_array( $commentdata ) ) {
+			return new WP_Error(
+				'invalid_input',
+				__( 'No Data Passed to Update Linkback', 'webmention' )
+			);
+		}
 		$comment_type = isset( $commentarr['comment_type'] ) ? $commentarr['comment_type'] : get_comment_type( $commentarr['comment_ID'] );
+
+		$commentdata = linkback_commentdata( $commentdata );
 
 		// disable flood control
 		remove_filter( 'wp_is_comment_flood', 'wp_check_comment_flood', 10 );

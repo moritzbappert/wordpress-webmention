@@ -229,77 +229,57 @@ class Webmention_Receiver {
 		if ( ! isset( $params['source'] ) ) {
 			return new WP_Error( 'source_missing', __( 'Source is missing', 'webmention' ), array( 'status' => 400 ) );
 		}
-
-		$source = urldecode( $params['source'] );
-
 		if ( ! isset( $params['target'] ) ) {
 			return new WP_Error( 'target_missing', __( 'Target is missing', 'webmention' ), array( 'status' => 400 ) );
 		}
 
-		$target = urldecode( $params['target'] );
+		$commentdata = array(
+			'comment_author_IP'    => preg_replace( '/[^0-9a-fA-F:., ]/', '', $_SERVER['REMOTE_ADDR'] ),
+			'comment_agent'        => isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '',
+			'comment_date'         => current_time( 'mysql' ),
+			'comment_date_gmt'     => current_time( 'mysql', 1 ),
+			'created'              => current_time( DATE_W3C ), // as the comment date is set based on the source this stores when it was actually received
+			'comment_type'         => WEBMENTION_COMMENT_TYPE, // change this if your theme can't handle the Webmentions comment type
+			'comment_approved'     => WEBMENTION_COMMENT_APPROVE,  // change this if you want to auto approve your Webmentions
+			'comment_author_email' => '',
+			'protocol'             => 'webmention', // Note the protocol of the new comment
+			'source'               => urldecode( $params['source'] ),
+			'target'               => urldecode( $params['target'] ),
+		);
 
-		if ( ! stristr( $target, preg_replace( '/^https?:\/\//i', '', home_url() ) ) ) {
+		if ( ! stristr( $commentdata['target'], preg_replace( '/^https?:\/\//i', '', home_url() ) ) ) {
 			return new WP_Error( 'target_mismatching_domain', __( 'Target is not on this domain', 'webmention' ), array( 'status' => 400 ) );
 		}
 
-		$comment_post_id = webmention_url_to_postid( $target );
+		$commentdata['comment_post_ID'] = webmention_url_to_postid( $commentdata['target'] );
 
 		// check if post id exists
-		if ( ! $comment_post_id ) {
+		if ( ! $commentdata['comment_post_ID'] ) {
 			return new WP_Error( 'target_not_valid', __( 'Target is not a valid post', 'webmention' ), array( 'status' => 400 ) );
 		}
 
-		if ( url_to_postid( $source ) === $comment_post_id ) {
+		if ( webmention_url_to_postid( $commentdata['source'] ) === $commentdata['comment_post_ID'] ) {
 			return new WP_Error( 'source_equals_target', __( 'Target and source cannot direct to the same resource', 'webmention' ), array( 'status' => 400 ) );
 		}
 
 		// check if pings are allowed
-		if ( ! pings_open( $comment_post_id ) ) {
+		if ( ! pings_open( $commentdata['comment_post_ID'] ) ) {
 			return new WP_Error( 'pings_closed', __( 'Pings are disabled for this post', 'webmention' ), array( 'status' => 400 ) );
 		}
 
-		$post = get_post( $comment_post_id );
+		$post = get_post( $commentdata['comment_post_ID'] );
 		if ( ! $post ) {
 			return new WP_Error( 'target_not_valid', __( 'Target is not a valid post', 'webmention' ), array( 'status' => 400 ) );
 		}
-		// In the event of async processing this needs to be stored here as it might not be available
-		// later.
-		$comment_meta                          = array();
-		$comment_author_ip                     = preg_replace( '/[^0-9a-fA-F:., ]/', '', $_SERVER['REMOTE_ADDR'] );
-		$comment_agent                         = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '';
-		$comment_date                          = current_time( 'mysql' );
-		$comment_date_gmt                      = current_time( 'mysql', 1 );
-		$comment_meta['webmention_created_at'] = $comment_date_gmt;
 
 		if ( isset( $params['vouch'] ) ) {
 			// If there is a vouch pass it along
-			$vouch = urldecode( $params['vouch'] );
-			// Safely store a version of the data
-			$comment_meta['webmention_vouch_url'] = esc_url_raw( $vouch );
+			$commentdata['vouch'] = urldecode( $params['vouch'] );
 		}
 
-		// change this if your theme can't handle the Webmentions comment type
-		$comment_type = WEBMENTION_COMMENT_TYPE;
-
-		// change this if you want to auto approve your Webmentions
-		$comment_approved = WEBMENTION_COMMENT_APPROVE;
-
-		$commentdata = compact( 'comment_type', 'comment_approved', 'comment_agent', 'comment_date', 'comment_date_gmt', 'comment_meta', 'source', 'target', 'vouch' );
-
-		$commentdata['comment_post_ID']   = $comment_post_id;
-		$commentdata['comment_author_IP'] = $comment_author_ip;
 		// Set Comment Author URL to Source
 		$commentdata['comment_author_url'] = esc_url_raw( $commentdata['source'] );
-		// Save Source to Meta to Allow Author URL to be Changed and Parsed
-		$commentdata['comment_meta']['webmention_source_url'] = $commentdata['comment_author_url'];
 
-		$fragment = wp_parse_url( $commentdata['target'], PHP_URL_FRAGMENT );
-		if ( ! empty( $fragment ) ) {
-			$commentdata['comment_meta']['webmention_target_fragment'] = $fragment;
-		}
-		$commentdata['comment_meta']['webmention_target_url'] = $commentdata['target'];
-
-		$commentdata['comment_parent'] = '';
 		// check if there is a parent comment
 		$query_string = wp_parse_url( $commentdata['target'], PHP_URL_QUERY );
 		if ( $query_string ) {
@@ -308,10 +288,9 @@ class Webmention_Receiver {
 			if ( isset( $query_array['replytocom'] ) && get_comment( $query_array['replytocom'] ) ) {
 				$commentdata['comment_parent'] = $query_array['replytocom'];
 			}
+		} else {
+			$commentdata['comment_parent'] = '';
 		}
-
-		// add empty fields
-		$commentdata['comment_author_email'] = '';
 
 		// Define WEBMENTION_PROCESS_TYPE as true if you want to define an asynchronous handler
 		if ( WEBMENTION_PROCESS_TYPE_ASYNC === get_webmention_process_type() ) {
