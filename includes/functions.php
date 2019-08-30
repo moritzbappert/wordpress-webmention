@@ -107,6 +107,14 @@ function webmention_url_to_postid( $url ) {
 	if ( '/' === wp_make_link_relative( trailingslashit( $url ) ) ) {
 		return apply_filters( 'webmention_post_id', get_option( 'webmention_home_mentions' ), $url );
 	}
+	// Allow webmentions to local media file but onyl check if the url has an extension
+	$ext = pathinfo( wp_parse_url( $url, PHP_URL_PATH ), PATHINFO_EXTENSION );
+	if ( ! empty( $ext ) ) {
+		$id = attachment_url_to_postid( $url );
+		if ( $id ) {
+			return apply_filters( 'webmention_post_id', $id, $url );
+		}
+	}
 
 	return apply_filters( 'webmention_post_id', url_to_postid( $url ), $url );
 }
